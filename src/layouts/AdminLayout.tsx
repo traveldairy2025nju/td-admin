@@ -10,22 +10,21 @@ import {
   message 
 } from 'antd';
 import {
-  DesktopOutlined,
   AuditOutlined,
   UserOutlined,
   LogoutOutlined,
   CheckOutlined,
-  CloseOutlined,
   MenuUnfoldOutlined,
-  MenuFoldOutlined
+  MenuFoldOutlined,
+  SafetyOutlined
 } from '@ant-design/icons';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import PendingDiaries from '../pages/PendingDiaries';
 import ApprovedDiaries from '../pages/ApprovedDiaries';
 
 const { Header, Content, Sider } = Layout;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -36,6 +35,10 @@ const AdminLayout: React.FC = () => {
   
   // 默认渲染审核待办列表
   const [currentPage, setCurrentPage] = useState('pending');
+  
+  // 判断是否为管理员
+  const isAdmin = userInfo?.role === 'admin';
+  const roleText = isAdmin ? '管理员' : '审核员';
   
   useEffect(() => {
     // 根据 URL 路径确定当前页面
@@ -64,8 +67,11 @@ const AdminLayout: React.FC = () => {
   
   const userMenu = (
     <Menu>
-      <Menu.Item key="profile" icon={<UserOutlined />}>
-        用户资料
+      <Menu.Item key="role" disabled>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <SafetyOutlined style={{ marginRight: 8 }} />
+          <span>{roleText}</span>
+        </div>
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
@@ -143,8 +149,8 @@ const AdminLayout: React.FC = () => {
         </Header>
         
         <Content style={{ margin: '24px 16px', padding: 24, overflow: 'initial' }}>
-          {currentPage === 'pending' && <PendingDiaries />}
-          {currentPage === 'approved' && <ApprovedDiaries />}
+          {currentPage === 'pending' && <PendingDiaries isAdmin={isAdmin} />}
+          {currentPage === 'approved' && <ApprovedDiaries isAdmin={isAdmin} />}
           <Outlet />
         </Content>
       </Layout>

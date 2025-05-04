@@ -33,7 +33,11 @@ import { formatDate, truncateText, htmlToText } from '../utils';
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
-const PendingDiaries: React.FC = () => {
+interface PendingDiariesProps {
+  isAdmin: boolean;
+}
+
+const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
   const { 
     pendingDiaries, 
     pendingDiariesLoading, 
@@ -118,6 +122,57 @@ const PendingDiaries: React.FC = () => {
     });
   };
   
+  const getActionButtons = (record: Diary) => {
+    const buttons = [
+      <Button 
+        key="view"
+        type="primary" 
+        size="small" 
+        icon={<EyeOutlined />} 
+        onClick={() => handleViewDiary(record)}
+      >
+        查看
+      </Button>,
+      <Button 
+        key="approve"
+        type="primary" 
+        size="small" 
+        icon={<CheckCircleOutlined />} 
+        onClick={() => handleApproveDiary(record.id)}
+        loading={operationLoading}
+      >
+        通过
+      </Button>,
+      <Button 
+        key="reject"
+        danger
+        size="small"
+        icon={<CloseCircleOutlined />}
+        onClick={() => showRejectModal(record)}
+        loading={operationLoading}
+      >
+        拒绝
+      </Button>
+    ];
+    
+    // 只有管理员可以删除游记
+    if (isAdmin) {
+      buttons.push(
+        <Button 
+          key="delete"
+          type="text" 
+          danger
+          size="small"
+          icon={<DeleteOutlined />}
+          onClick={() => showDeleteModal(record)}
+          loading={operationLoading}
+        />
+      );
+    }
+    
+    return buttons;
+  };
+  
   const columns: ColumnsType<Diary> = [
     {
       title: '标题',
@@ -161,40 +216,7 @@ const PendingDiaries: React.FC = () => {
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          <Button 
-            type="primary" 
-            size="small" 
-            icon={<EyeOutlined />} 
-            onClick={() => handleViewDiary(record)}
-          >
-            查看
-          </Button>
-          <Button 
-            type="primary" 
-            size="small" 
-            icon={<CheckCircleOutlined />} 
-            onClick={() => handleApproveDiary(record.id)}
-            loading={operationLoading}
-          >
-            通过
-          </Button>
-          <Button 
-            danger
-            size="small"
-            icon={<CloseCircleOutlined />}
-            onClick={() => showRejectModal(record)}
-            loading={operationLoading}
-          >
-            拒绝
-          </Button>
-          <Button 
-            type="text" 
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => showDeleteModal(record)}
-            loading={operationLoading}
-          />
+          {getActionButtons(record)}
         </Space>
       ),
     },
@@ -267,6 +289,21 @@ const PendingDiaries: React.FC = () => {
             >
               拒绝
             </Button>
+            {isAdmin && (
+              <Button 
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  setViewDrawerVisible(false);
+                  if (currentDiary) {
+                    showDeleteModal(currentDiary);
+                  }
+                }}
+                loading={operationLoading}
+              >
+                删除
+              </Button>
+            )}
           </Space>
         }
       >
@@ -389,23 +426,25 @@ const PendingDiaries: React.FC = () => {
       </Modal>
       
       {/* 删除游记模态框 */}
-      <Modal
-        title="删除游记"
-        open={deleteModalVisible}
-        onOk={handleDeleteDiary}
-        onCancel={() => setDeleteModalVisible(false)}
-        confirmLoading={operationLoading}
-        okText="确认删除"
-        cancelText="取消"
-        okButtonProps={{ danger: true }}
-      >
-        <div>
-          <Text>您确定要删除以下游记吗？此操作不可逆。</Text>
-          <Paragraph strong style={{ margin: '8px 0' }}>
-            {currentDiary?.title}
-          </Paragraph>
-        </div>
-      </Modal>
+      {isAdmin && (
+        <Modal
+          title="删除游记"
+          open={deleteModalVisible}
+          onOk={handleDeleteDiary}
+          onCancel={() => setDeleteModalVisible(false)}
+          confirmLoading={operationLoading}
+          okText="确认删除"
+          cancelText="取消"
+          okButtonProps={{ danger: true }}
+        >
+          <div>
+            <Text>您确定要删除以下游记吗？此操作不可逆。</Text>
+            <Paragraph strong style={{ margin: '8px 0' }}>
+              {currentDiary?.title}
+            </Paragraph>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

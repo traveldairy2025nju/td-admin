@@ -3,7 +3,7 @@ export interface User {
   username: string;
   nickname: string;
   avatarUrl: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'reviewer' | 'admin';
   createdAt: string;
 }
 
@@ -63,4 +63,11 @@ export interface UpdateDiaryData {
 
 export interface RejectDiaryData {
   rejectReason: string;
+}
+
+// API响应的标准格式
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
 } 

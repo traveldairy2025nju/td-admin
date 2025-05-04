@@ -4,7 +4,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     // 如果已登录，重定向到首页
-    if (isLoggedIn && userInfo?.role === 'admin') {
+    if (isLoggedIn && (userInfo?.role === 'admin' || userInfo?.role === 'reviewer')) {
       navigate('/');
     }
   }, [isLoggedIn, userInfo, navigate]);
@@ -41,6 +41,7 @@ const Login: React.FC = () => {
     <div className="login-container">
       <Card className="login-form">
         <Title level={2} className="login-title">旅游日记审核平台</Title>
+        
         <Form
           name="login_form"
           initialValues={{ remember: true }}
@@ -82,9 +83,9 @@ const Login: React.FC = () => {
           </Form.Item>
 
           <div style={{ textAlign: 'center' }}>
-            <Typography.Text type="secondary">
-              测试账号: testuser / test123456
-            </Typography.Text>
+            <Text type="secondary">
+              仅限管理员和审核员登录
+            </Text>
           </div>
         </Form>
       </Card>

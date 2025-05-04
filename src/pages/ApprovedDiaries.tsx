@@ -32,7 +32,11 @@ import { formatDate, getRelativeTime, truncateText, htmlToText } from '../utils'
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 
-const ApprovedDiaries: React.FC = () => {
+interface ApprovedDiariesProps {
+  isAdmin: boolean;
+}
+
+const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
   const { 
     publicDiaries, 
     publicDiariesLoading, 
@@ -71,12 +75,16 @@ const ApprovedDiaries: React.FC = () => {
   };
   
   const showDeleteModal = (diary: Diary) => {
+    if (!isAdmin) {
+      message.warning('只有管理员可以删除游记');
+      return;
+    }
     setCurrentDiary(diary);
     setDeleteModalVisible(true);
   };
   
   const handleDeleteDiary = async () => {
-    if (!currentDiary) return;
+    if (!currentDiary || !isAdmin) return;
     
     try {
       await adminDeleteDiary(currentDiary.id);
@@ -88,6 +96,33 @@ const ApprovedDiaries: React.FC = () => {
   };
   
   const renderDiaryCard = (diary: Diary) => {
+    const cardActions = [
+      <Button 
+        key="view"
+        type="text" 
+        icon={<EyeOutlined />} 
+        onClick={() => handleViewDiary(diary)}
+      >
+        查看
+      </Button>
+    ];
+    
+    // 只有管理员可以删除游记
+    if (isAdmin) {
+      cardActions.push(
+        <Button 
+          key="delete"
+          type="text" 
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => showDeleteModal(diary)}
+          loading={operationLoading}
+        >
+          删除
+        </Button>
+      );
+    }
+    
     return (
       <Card
         hoverable
@@ -160,24 +195,7 @@ const ApprovedDiaries: React.FC = () => {
             </div>
           )
         }
-        actions={[
-          <Button 
-            type="text" 
-            icon={<EyeOutlined />} 
-            onClick={() => handleViewDiary(diary)}
-          >
-            查看
-          </Button>,
-          <Button 
-            type="text" 
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => showDeleteModal(diary)}
-            loading={operationLoading}
-          >
-            删除
-          </Button>
-        ]}
+        actions={cardActions}
       >
         <div style={{ marginBottom: 8 }}>
           <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
@@ -279,19 +297,21 @@ const ApprovedDiaries: React.FC = () => {
         open={viewDrawerVisible}
         onClose={() => setViewDrawerVisible(false)}
         extra={
-          <Button 
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => {
-              setViewDrawerVisible(false);
-              if (currentDiary) {
-                showDeleteModal(currentDiary);
-              }
-            }}
-            loading={operationLoading}
-          >
-            删除
-          </Button>
+          isAdmin ? (
+            <Button 
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                setViewDrawerVisible(false);
+                if (currentDiary) {
+                  showDeleteModal(currentDiary);
+                }
+              }}
+              loading={operationLoading}
+            >
+              删除
+            </Button>
+          ) : null
         }
       >
         {currentDiary ? (
@@ -380,23 +400,25 @@ const ApprovedDiaries: React.FC = () => {
       </div>
       
       {/* 删除游记模态框 */}
-      <Modal
-        title="删除游记"
-        open={deleteModalVisible}
-        onOk={handleDeleteDiary}
-        onCancel={() => setDeleteModalVisible(false)}
-        confirmLoading={operationLoading}
-        okText="确认删除"
-        cancelText="取消"
-        okButtonProps={{ danger: true }}
-      >
-        <div>
-          <Text>您确定要删除以下游记吗？此操作不可逆。</Text>
-          <Paragraph strong style={{ margin: '8px 0' }}>
-            {currentDiary?.title}
-          </Paragraph>
-        </div>
-      </Modal>
+      {isAdmin && (
+        <Modal
+          title="删除游记"
+          open={deleteModalVisible}
+          onOk={handleDeleteDiary}
+          onCancel={() => setDeleteModalVisible(false)}
+          confirmLoading={operationLoading}
+          okText="确认删除"
+          cancelText="取消"
+          okButtonProps={{ danger: true }}
+        >
+          <div>
+            <Text>您确定要删除以下游记吗？此操作不可逆。</Text>
+            <Paragraph strong style={{ margin: '8px 0' }}>
+              {currentDiary?.title}
+            </Paragraph>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

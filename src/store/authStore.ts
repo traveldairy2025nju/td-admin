@@ -17,6 +17,10 @@ interface AuthState {
 
 // 检查本地存储中的令牌是否有效
 const isTokenValid = (token: string): boolean => {
+  if (!token || token.trim() === '') {
+    return false;
+  }
+  
   try {
     const decoded: any = jwtDecode(token);
     const currentTime = Date.now() / 1000;
@@ -27,6 +31,7 @@ const isTokenValid = (token: string): boolean => {
     
     return true;
   } catch (error) {
+    // 令牌解析失败，静默处理
     return false;
   }
 };
@@ -78,7 +83,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   
   checkAuth: async () => {
     const token = localStorage.getItem('token');
-    if (token && isTokenValid(token)) {
+    
+    if (!token) {
+      return false;
+    }
+    
+    if (isTokenValid(token)) {
       set({ token, loading: true });
       try {
         const user = await authAPI.getUserProfile();
@@ -98,7 +108,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
         return false;
       }
+    } else {
+      localStorage.removeItem('token');
+      return false;
     }
-    return false;
   }
 })); 
