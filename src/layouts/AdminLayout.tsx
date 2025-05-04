@@ -33,24 +33,12 @@ const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
   
-  // 默认渲染审核待办列表
-  const [currentPage, setCurrentPage] = useState('pending');
-  
   // 判断是否为管理员
   const isAdmin = userInfo?.role === 'admin';
   const roleText = isAdmin ? '管理员' : '审核员';
   
-  useEffect(() => {
-    // 根据 URL 路径确定当前页面
-    if (location.pathname === '/approved') {
-      setCurrentPage('approved');
-    } else {
-      setCurrentPage('pending');
-    }
-  }, [location]);
-  
   const handleMenuClick = (key: string) => {
-    setCurrentPage(key);
+    console.log('菜单点击, 切换到:', key);
     navigate(key === 'pending' ? '/' : `/${key}`);
   };
   
@@ -107,7 +95,7 @@ const AdminLayout: React.FC = () => {
         <Menu 
           theme="dark" 
           mode="inline"
-          selectedKeys={[currentPage]}
+          selectedKeys={[location.pathname === '/approved' ? 'approved' : 'pending']}
         >
           <Menu.Item key="pending" icon={<AuditOutlined />} onClick={() => handleMenuClick('pending')}>
             待审核游记
@@ -149,8 +137,11 @@ const AdminLayout: React.FC = () => {
         </Header>
         
         <Content style={{ margin: '24px 16px', padding: 24, overflow: 'initial' }}>
-          {currentPage === 'pending' && <PendingDiaries isAdmin={isAdmin} />}
-          {currentPage === 'approved' && <ApprovedDiaries isAdmin={isAdmin} />}
+          {location.pathname === '/approved' ? (
+            <ApprovedDiaries isAdmin={isAdmin} />
+          ) : (
+            <PendingDiaries isAdmin={isAdmin} />
+          )}
           <Outlet />
         </Content>
       </Layout>

@@ -54,10 +54,25 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   useEffect(() => {
+    console.log('ApprovedDiaries组件初始化，开始获取游记');
     fetchPublicDiaries();
   }, [fetchPublicDiaries]);
   
+  // 添加额外的useEffect，监控publicDiaries的变化
+  useEffect(() => {
+    console.log('publicDiaries更新:', publicDiaries);
+    console.log('publicDiaries数据类型:', typeof publicDiaries);
+    console.log('publicDiaries是否为数组:', Array.isArray(publicDiaries));
+    console.log('publicDiaries长度:', publicDiaries?.length);
+    
+    // 检查数据结构
+    if (publicDiaries && publicDiaries.length > 0) {
+      console.log('第一条游记数据:', JSON.stringify(publicDiaries[0]));
+    }
+  }, [publicDiaries]);
+  
   const handleSearch = () => {
+    console.log('执行搜索，关键词:', keyword);
     fetchPublicDiaries({ page: 1, limit: publicDiariesPagination.limit, keyword });
   };
   

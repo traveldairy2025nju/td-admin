@@ -45,6 +45,16 @@ function App() {
               )
             }
           />
+          <Route 
+            path="/approved" 
+            element={
+              !isLoggedIn || (userInfo?.role !== 'admin' && userInfo?.role !== 'reviewer') ? (
+                <Navigate to="/login" replace />
+              ) : (
+                <AdminLayout />
+              )
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

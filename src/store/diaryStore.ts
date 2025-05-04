@@ -99,9 +99,11 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   
   // 方法实现
   fetchPublicDiaries: async (params = { page: 1, limit: 10 }) => {
+    console.log('开始获取已审核游记, 参数:', params);
     set({ publicDiariesLoading: true, publicDiariesError: null });
     try {
       const response = await diaryAPI.getPublicDiaries(params);
+      console.log('获取已审核游记成功, 数据:', response.items.length, '条');
       set({ 
         publicDiaries: response.items,
         publicDiariesPagination: {
@@ -113,6 +115,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
         publicDiariesLoading: false,
       });
     } catch (error: any) {
+      console.error('获取已审核游记失败:', error);
       set({ 
         publicDiariesError: error.response?.data?.message || '获取游记列表失败',
         publicDiariesLoading: false,
