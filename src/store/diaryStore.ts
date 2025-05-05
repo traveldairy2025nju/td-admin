@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Diary, PaginatedResponse, CreateDiaryData, UpdateDiaryData, RejectDiaryData } from '../types';
+import { Diary, PaginatedResponse, CreateDiaryData, UpdateDiaryData, RejectDiaryData, AiReviewResult } from '../types';
 import { diaryAPI, adminAPI } from '../services/api';
 
 interface DiaryState {
@@ -45,6 +45,11 @@ interface DiaryState {
   operationLoading: boolean;
   operationError: string | null;
   
+  // AI审核状态
+  aiReviewLoading: boolean;
+  aiReviewError: string | null;
+  aiReviewResult: AiReviewResult | null;
+  
   // 方法
   fetchPublicDiaries: (params?: { page?: number; limit?: number; keyword?: string }) => Promise<void>;
   fetchUserDiaries: (params?: { page?: number; limit?: number; status?: 'pending' | 'approved' | 'rejected' }) => Promise<void>;
@@ -56,6 +61,9 @@ interface DiaryState {
   approveDiary: (id: string) => Promise<Diary>;
   rejectDiary: (id: string, data: RejectDiaryData) => Promise<Diary>;
   adminDeleteDiary: (id: string) => Promise<void>;
+  
+  // AI审核方法
+  getAiReview: (id: string) => Promise<AiReviewResult>;
 }
 
 export const useDiaryStore = create<DiaryState>((set, get) => ({
@@ -96,6 +104,11 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   
   operationLoading: false,
   operationError: null,
+  
+  // AI审核初始状态
+  aiReviewLoading: false,
+  aiReviewError: null,
+  aiReviewResult: null,
   
   // 方法实现
   fetchPublicDiaries: async (params = { page: 1, limit: 10 }) => {
@@ -331,6 +344,25 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
       set({ 
         operationError: error.response?.data?.message || '管理员删除游记失败',
         operationLoading: false,
+      });
+      throw error;
+    }
+  },
+  
+  // AI审核方法实现
+  getAiReview: async (id: string) => {
+    set({ aiReviewLoading: true, aiReviewError: null });
+    try {
+      const result = await diaryAPI.getAiReview(id);
+      set({ 
+        aiReviewResult: result,
+        aiReviewLoading: false 
+      });
+      return result;
+    } catch (error: any) {
+      set({ 
+        aiReviewError: error.response?.data?.message || 'AI审核失败',
+        aiReviewLoading: false 
       });
       throw error;
     }

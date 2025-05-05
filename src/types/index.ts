@@ -65,6 +65,11 @@ export interface RejectDiaryData {
   rejectReason: string;
 }
 
+export interface AiReviewResult {
+  approved: boolean;
+  reason: string;
+}
+
 // API响应的标准格式
 export interface ApiResponse<T> {
   success: boolean;

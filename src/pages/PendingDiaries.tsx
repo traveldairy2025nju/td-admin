@@ -15,7 +15,8 @@ import {
   Image,
   Empty,
   Spin,
-  Tooltip
+  Tooltip,
+  Alert
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -24,10 +25,11 @@ import {
   EyeOutlined,
   UserOutlined,
   ClockCircleOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useDiaryStore } from '../store/diaryStore';
-import { Diary } from '../types';
+import { Diary, AiReviewResult } from '../types';
 import { formatDate, truncateText, htmlToText } from '../utils';
 
 const { Title, Text, Paragraph } = Typography;
@@ -47,7 +49,11 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
     approveDiary,
     rejectDiary,
     adminDeleteDiary,
-    operationLoading
+    operationLoading,
+    getAiReview,
+    aiReviewLoading,
+    aiReviewResult,
+    aiReviewError
   } = useDiaryStore();
   
   const [currentDiary, setCurrentDiary] = useState<Diary | null>(null);
@@ -122,6 +128,26 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
     });
   };
   
+  const handleAiReview = async (diary: Diary) => {
+    try {
+      const result = await getAiReview(diary.id);
+      setCurrentDiary(diary);
+      setViewDrawerVisible(true);
+      
+      // 如果用户点击"应用AI建议"，自动填写审核结果
+      if (result.approved) {
+        await approveDiary(diary.id);
+        message.success('已应用AI建议：通过审核');
+      } else {
+        setRejectReason(result.reason);
+        setRejectModalVisible(true);
+      }
+    } catch (error) {
+      console.error('AI审核失败:', error);
+      message.error('AI审核失败，请稍后重试');
+    }
+  };
+  
   const getActionButtons = (record: Diary) => {
     const buttons = [
       <Button 
@@ -132,6 +158,16 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
         onClick={() => handleViewDiary(record)}
       >
         查看
+      </Button>,
+      <Button
+        key="ai-review"
+        type="default"
+        size="small"
+        icon={<RobotOutlined />}
+        onClick={() => handleAiReview(record)}
+        loading={aiReviewLoading}
+      >
+        AI审核
       </Button>,
       <Button 
         key="approve"
@@ -257,140 +293,108 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
       
       {/* 查看游记抽屉 */}
       <Drawer
-        title="游记详情"
+        title={currentDiary?.title}
+        placement="right"
         width={720}
-        open={viewDrawerVisible}
         onClose={() => setViewDrawerVisible(false)}
-        extra={
-          <Space>
-            <Button 
-              type="primary" 
-              icon={<CheckCircleOutlined />} 
-              onClick={() => {
-                if (currentDiary) {
-                  handleApproveDiary(currentDiary.id);
-                  setViewDrawerVisible(false);
-                }
-              }}
-              loading={operationLoading}
-            >
-              通过
-            </Button>
-            <Button 
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => {
-                setViewDrawerVisible(false);
-                if (currentDiary) {
-                  showRejectModal(currentDiary);
-                }
-              }}
-              loading={operationLoading}
-            >
-              拒绝
-            </Button>
-            {isAdmin && (
-              <Button 
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => {
-                  setViewDrawerVisible(false);
-                  if (currentDiary) {
-                    showDeleteModal(currentDiary);
-                  }
-                }}
-                loading={operationLoading}
-              >
-                删除
-              </Button>
-            )}
-          </Space>
-        }
+        open={viewDrawerVisible}
       >
-        {currentDiary ? (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <Title level={4}>{currentDiary.title}</Title>
-              <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
+        {currentDiary && (
+          <>
+            {/* 作者信息 */}
+            <div style={{ marginBottom: 24 }}>
+              <Space align="center">
                 <Avatar 
                   icon={<UserOutlined />} 
                   src={currentDiary.author.avatarUrl} 
-                  style={{ marginRight: 8 }}
                 />
-                <span style={{ marginRight: 16 }}>
-                  {currentDiary.author.nickname || currentDiary.author.username}
-                </span>
-                <span>
-                  {formatDate(currentDiary.createdAt, 'YYYY-MM-DD HH:mm:ss')}
-                </span>
-              </div>
+                <Text strong>{currentDiary.author.nickname || currentDiary.author.username}</Text>
+                <Text type="secondary">
+                  提交于 {formatDate(currentDiary.createdAt, 'YYYY-MM-DD HH:mm')}
+                </Text>
+              </Space>
             </div>
             
-            {currentDiary.images && currentDiary.images.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>游记图片：</Text>
-                <div className="image-preview">
-                  {currentDiary.images.map((img, index) => (
-                    <div 
-                      key={index} 
-                      className="image-preview-item"
-                      onClick={() => setPreviewImage(img)}
-                    >
-                      <img src={img} alt={`游记图片 ${index + 1}`} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {currentDiary.videoUrl && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>视频：</Text>
-                <div style={{ marginTop: 8 }}>
-                  <video 
-                    controls 
-                    src={currentDiary.videoUrl} 
-                    style={{ width: '100%', maxHeight: 300 }}
-                  />
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <Text strong>游记内容：</Text>
-              <div 
-                className="diary-content"
-                dangerouslySetInnerHTML={{ __html: currentDiary.content }}
-                style={{ 
-                  marginTop: 8, 
-                  padding: 16, 
-                  border: '1px solid #f0f0f0', 
-                  borderRadius: 4,
-                  maxHeight: '400px',
-                  overflow: 'auto'
-                }}
+            {/* AI审核结果 */}
+            {aiReviewResult && (
+              <Alert
+                message={
+                  <Space>
+                    <RobotOutlined />
+                    <Text strong>AI审核建议</Text>
+                  </Space>
+                }
+                description={
+                  <>
+                    <Paragraph>
+                      <Text type={aiReviewResult.approved ? 'success' : 'danger'}>
+                        建议{aiReviewResult.approved ? '通过' : '拒绝'}审核
+                      </Text>
+                    </Paragraph>
+                    <Paragraph>{aiReviewResult.reason}</Paragraph>
+                    <Space>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          if (aiReviewResult.approved) {
+                            handleApproveDiary(currentDiary.id);
+                          } else {
+                            setRejectReason(aiReviewResult.reason);
+                            setRejectModalVisible(true);
+                          }
+                          setViewDrawerVisible(false);
+                        }}
+                      >
+                        应用AI建议
+                      </Button>
+                    </Space>
+                  </>
+                }
+                type={aiReviewResult.approved ? 'success' : 'warning'}
+                style={{ marginBottom: 24 }}
               />
+            )}
+            
+            {/* 游记内容 */}
+            <div className="diary-content">
+              <Title level={4}>游记内容</Title>
+              <div dangerouslySetInnerHTML={{ __html: currentDiary.content }} />
             </div>
-          </div>
-        ) : (
-          <Spin />
+            
+            {/* 图片展示 */}
+            {currentDiary.images && currentDiary.images.length > 0 && (
+              <div className="diary-images">
+                <Title level={4}>图片</Title>
+                <Image.PreviewGroup>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {currentDiary.images.map((url, index) => (
+                      <Image
+                        key={index}
+                        src={url}
+                        width={160}
+                        height={160}
+                        style={{ objectFit: 'cover' }}
+                      />
+                    ))}
+                  </div>
+                </Image.PreviewGroup>
+              </div>
+            )}
+            
+            {/* 视频展示 */}
+            {currentDiary.videoUrl && (
+              <div className="diary-video">
+                <Title level={4}>视频</Title>
+                <video
+                  src={currentDiary.videoUrl}
+                  controls
+                  style={{ width: '100%', maxHeight: 400 }}
+                />
+              </div>
+            )}
+          </>
         )}
       </Drawer>
-      
-      {/* 图片预览 */}
-      <div style={{ display: 'none' }}>
-        <Image
-          preview={{
-            visible: !!previewImage,
-            src: previewImage || '',
-            onVisibleChange: (visible) => {
-              if (!visible) {
-                setPreviewImage(null);
-              }
-            },
-          }}
-        />
-      </div>
       
       {/* 拒绝游记模态框 */}
       <Modal

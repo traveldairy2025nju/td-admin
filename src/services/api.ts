@@ -7,7 +7,8 @@ import {
   Diary, 
   PaginatedResponse,
   RejectDiaryData,
-  User
+  User,
+  AiReviewResult
 } from '../types';
 
 // 修正：直接指向后端服务，baseURL已包含'/api'
@@ -245,11 +246,19 @@ export const diaryAPI = {
     
   getPublicDiaries: (params?: { page?: number; limit?: number; keyword?: string }): Promise<PaginatedResponse<Diary>> => {
     console.log('调用getPublicDiaries API, 参数:', params);
+    if (params?.keyword) {
+      console.log('执行标题搜索，关键词:', params.keyword);
+    }
     return api.get('/diaries', { params })
       .then(res => {
         console.log('获取已审核游记响应原始数据:', JSON.stringify(res.data));
         const paginatedData = handleResponse(res);
         console.log('处理后的分页数据:', paginatedData);
+        console.log('获取到的游记数量:', paginatedData.items?.length || 0);
+        
+        if (params?.keyword) {
+          console.log('搜索关键词:', params.keyword, '匹配到记录数:', paginatedData.items?.length || 0);
+        }
         
         if (!paginatedData.items || !Array.isArray(paginatedData.items)) {
           console.error('获取到的items不是数组或为空:', paginatedData);
@@ -288,6 +297,9 @@ export const diaryAPI = {
         totalPages: paginatedData.totalPages
       };
     }),
+  
+  getAiReview: (id: string): Promise<AiReviewResult> => 
+    api.get(`/admin/diaries/${id}/ai-review`).then(res => handleResponse(res)),
 };
 
 // 管理员相关API

@@ -23,6 +23,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.5.3",
     "react-scripts": "5.0.1",
+    "td-admin": "file:",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4",
     "zustand": "^5.0.4"

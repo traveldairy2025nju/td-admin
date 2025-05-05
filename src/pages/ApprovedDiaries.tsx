@@ -73,7 +73,11 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
   
   const handleSearch = () => {
     console.log('执行搜索，关键词:', keyword);
-    fetchPublicDiaries({ page: 1, limit: publicDiariesPagination.limit, keyword });
+    fetchPublicDiaries({ 
+      page: 1, 
+      limit: publicDiariesPagination.limit, 
+      keyword 
+    });
   };
   
   const handlePaginationChange = (page: number, pageSize?: number) => {
@@ -251,14 +255,20 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
         
         <Space>
           <Search
-            placeholder="搜索游记标题"
+            placeholder="输入关键词搜索游记标题（如：我爱你）"
             allowClear
             enterButton={<SearchOutlined />}
             size="middle"
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={(e) => {
+              setKeyword(e.target.value);
+              // 如果清空关键词，则自动刷新列表
+              if (!e.target.value) {
+                fetchPublicDiaries({ page: 1, limit: publicDiariesPagination.limit });
+              }
+            }}
             onSearch={handleSearch}
-            style={{ width: 250 }}
+            style={{ width: 300 }}
           />
         </Space>
       </div>
