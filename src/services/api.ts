@@ -328,6 +328,18 @@ export const adminAPI = {
       };
     }),
     
+  getRejectedDiaries: (params?: { page?: number; limit?: number; keyword?: string }): Promise<PaginatedResponse<Diary>> => 
+    api.get('/diaries/rejected', { params }).then(res => {
+      const paginatedData = handleResponse(res);
+      return {
+        items: paginatedData.items.map(mapDiaryData),
+        total: paginatedData.total,
+        page: paginatedData.page,
+        limit: paginatedData.limit,
+        totalPages: paginatedData.totalPages
+      };
+    }),
+    
   approveDiary: (id: string): Promise<Diary> => 
     api.put(`/admin/diaries/${id}/approve`).then(res => {
       const diaryData = handleResponse(res);
