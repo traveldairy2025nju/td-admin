@@ -36,6 +36,17 @@ interface DiaryState {
     totalPages: number;
   };
   
+  // 已拒绝游记列表（管理员）
+  rejectedDiaries: Diary[];
+  rejectedDiariesLoading: boolean;
+  rejectedDiariesError: string | null;
+  rejectedDiariesPagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  
   // 当前选中的游记
   currentDiary: Diary | null;
   currentDiaryLoading: boolean;
@@ -49,6 +60,7 @@ interface DiaryState {
   fetchPublicDiaries: (params?: { page?: number; limit?: number; keyword?: string }) => Promise<void>;
   fetchUserDiaries: (params?: { page?: number; limit?: number; status?: 'pending' | 'approved' | 'rejected' }) => Promise<void>;
   fetchPendingDiaries: (params?: { page?: number; limit?: number }) => Promise<void>;
+  fetchRejectedDiaries: (params?: { page?: number; limit?: number; keyword?: string }) => Promise<void>;
   fetchDiaryById: (id: string) => Promise<Diary>;
   createDiary: (data: CreateDiaryData) => Promise<Diary>;
   updateDiary: (id: string, data: UpdateDiaryData) => Promise<Diary>;
@@ -84,6 +96,16 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   pendingDiariesLoading: false,
   pendingDiariesError: null,
   pendingDiariesPagination: {
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  },
+  
+  rejectedDiaries: [],
+  rejectedDiariesLoading: false,
+  rejectedDiariesError: null,
+  rejectedDiariesPagination: {
     total: 0,
     page: 1,
     limit: 10,
@@ -163,6 +185,28 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
       set({ 
         pendingDiariesError: error.response?.data?.message || '获取待审核游记失败',
         pendingDiariesLoading: false,
+      });
+    }
+  },
+  
+  fetchRejectedDiaries: async (params = { page: 1, limit: 10 }) => {
+    set({ rejectedDiariesLoading: true, rejectedDiariesError: null });
+    try {
+      const response = await adminAPI.getRejectedDiaries(params);
+      set({ 
+        rejectedDiaries: response.items,
+        rejectedDiariesPagination: {
+          total: response.total,
+          page: response.page,
+          limit: response.limit,
+          totalPages: response.totalPages,
+        },
+        rejectedDiariesLoading: false,
+      });
+    } catch (error: any) {
+      set({ 
+        rejectedDiariesError: error.response?.data?.message || '获取已拒绝游记失败',
+        rejectedDiariesLoading: false,
       });
     }
   },
