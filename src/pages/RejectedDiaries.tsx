@@ -15,7 +15,8 @@ import {
   Spin,
   Drawer,
   message,
-  Tag
+  Tag,
+  Tooltip
 } from 'antd';
 import {
   UserOutlined,
@@ -244,9 +245,20 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
           
           {diary.rejectReason && (
             <div style={{ marginTop: 8 }}>
-              <Tag color="error" icon={<InfoCircleOutlined />}>
-                拒绝原因: {truncateText(diary.rejectReason, 20)}
-              </Tag>
+              <Tooltip title={diary.rejectReason}>
+                <Tag 
+                  color="error" 
+                  icon={<InfoCircleOutlined />}
+                  style={{
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  拒绝原因: {truncateText(diary.rejectReason, 15)}
+                </Tag>
+              </Tooltip>
             </div>
           )}
         </div>

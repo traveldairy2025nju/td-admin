@@ -306,13 +306,18 @@ export const diaryAPI = {
 export const adminAPI = {
   getPendingDiaries: (params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Diary>> => 
     api.get('/admin/diaries/pending', { params }).then(res => {
-      const paginatedData = handleResponse(res);
+      const responseData = handleResponse(res);
+      // 适配新的响应格式
+      const paginatedData = {
+        items: responseData.diaries || [],
+        total: responseData.total || 0,
+        page: params?.page || 1,
+        limit: params?.limit || 10,
+        totalPages: responseData.totalPages || 1
+      };
       return {
-        items: paginatedData.items.map(mapDiaryData),
-        total: paginatedData.total,
-        page: paginatedData.page,
-        limit: paginatedData.limit,
-        totalPages: paginatedData.totalPages
+        ...paginatedData,
+        items: paginatedData.items.map(mapDiaryData)
       };
     }),
     
