@@ -61,6 +61,17 @@ interface DiaryState {
   aiReviewError: string | null;
   aiReviewResult: AiReviewResult | null;
   
+  // 当前审核员审核过的游记列表
+  myReviewedDiaries: Diary[];
+  myReviewedDiariesLoading: boolean;
+  myReviewedDiariesError: string | null;
+  myReviewedDiariesPagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  
   // 方法
   fetchPublicDiaries: (params?: { page?: number; limit?: number; keyword?: string }) => Promise<void>;
   fetchUserDiaries: (params?: { page?: number; limit?: number; status?: 'pending' | 'approved' | 'rejected' }) => Promise<void>;
@@ -73,6 +84,7 @@ interface DiaryState {
   approveDiary: (id: string) => Promise<Diary>;
   rejectDiary: (id: string, data: RejectDiaryData) => Promise<Diary>;
   adminDeleteDiary: (id: string) => Promise<void>;
+  fetchMyReviewedDiaries: (params?: { days?: number; page?: number; limit?: number }) => Promise<void>;
   
   // AI审核方法
   getAiReview: (id: string) => Promise<AiReviewResult>;
@@ -131,6 +143,16 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   aiReviewLoading: false,
   aiReviewError: null,
   aiReviewResult: null,
+  
+  myReviewedDiaries: [],
+  myReviewedDiariesLoading: false,
+  myReviewedDiariesError: null,
+  myReviewedDiariesPagination: {
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  },
   
   // 方法实现
   fetchPublicDiaries: async (params = { page: 1, limit: 10 }) => {
@@ -409,6 +431,28 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
         aiReviewLoading: false 
       });
       throw error;
+    }
+  },
+  
+  fetchMyReviewedDiaries: async (params = { page: 1, limit: 10, days: 30 }) => {
+    set({ myReviewedDiariesLoading: true, myReviewedDiariesError: null });
+    try {
+      const response = await adminAPI.getMyReviewedDiaries(params);
+      set({ 
+        myReviewedDiaries: response.items,
+        myReviewedDiariesPagination: {
+          total: response.total,
+          page: response.page,
+          limit: response.limit,
+          totalPages: response.totalPages,
+        },
+        myReviewedDiariesLoading: false,
+      });
+    } catch (error: any) {
+      set({ 
+        myReviewedDiariesError: error.response?.data?.message || '获取审核历史失败',
+        myReviewedDiariesLoading: false,
+      });
     }
   },
 })); 

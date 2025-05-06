@@ -17,13 +17,15 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   SafetyOutlined,
-  CloseOutlined
+  CloseOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import PendingDiaries from '../pages/PendingDiaries';
 import ApprovedDiaries from '../pages/ApprovedDiaries';
 import RejectedDiaries from '../pages/RejectedDiaries';
+import MyReviews from '../pages/MyReviews';
 
 const { Header, Content, Sider } = Layout;
 const { Text } = Typography;
@@ -99,7 +101,8 @@ const AdminLayout: React.FC = () => {
           mode="inline"
           selectedKeys={[
             location.pathname === '/approved' ? 'approved' : 
-            location.pathname === '/rejected' ? 'rejected' : 'pending'
+            location.pathname === '/rejected' ? 'rejected' :
+            location.pathname === '/my-reviews' ? 'my-reviews' : 'pending'
           ]}
         >
           <Menu.Item key="pending" icon={<AuditOutlined />} onClick={() => handleMenuClick('pending')}>
@@ -110,6 +113,9 @@ const AdminLayout: React.FC = () => {
           </Menu.Item>
           <Menu.Item key="rejected" icon={<CloseOutlined />} onClick={() => handleMenuClick('rejected')}>
             已拒绝游记
+          </Menu.Item>
+          <Menu.Item key="my-reviews" icon={<BarChartOutlined />} onClick={() => handleMenuClick('my-reviews')}>
+            我的审核
           </Menu.Item>
         </Menu>
       </Sider>
@@ -149,6 +155,8 @@ const AdminLayout: React.FC = () => {
             <ApprovedDiaries isAdmin={isAdmin} />
           ) : location.pathname === '/rejected' ? (
             <RejectedDiaries isAdmin={isAdmin} />
+          ) : location.pathname === '/my-reviews' ? (
+            <MyReviews />
           ) : (
             <PendingDiaries isAdmin={isAdmin} />
           )}

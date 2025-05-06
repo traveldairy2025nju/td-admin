@@ -359,6 +359,18 @@ export const adminAPI = {
     
   deleteDiary: (id: string) => 
     api.delete(`/admin/diaries/${id}`).then(res => handleResponse(res)),
+  
+  getMyReviewedDiaries: (params?: { days?: number; page?: number; limit?: number }): Promise<PaginatedResponse<Diary>> => 
+    api.get('/diaries/my-reviewed', { params }).then(res => {
+      const paginatedData = handleResponse(res);
+      return {
+        items: paginatedData.items.map(mapDiaryData),
+        total: paginatedData.total,
+        page: paginatedData.page,
+        limit: paginatedData.limit,
+        totalPages: paginatedData.totalPages
+      };
+    }),
 };
 
 // 文件上传API
