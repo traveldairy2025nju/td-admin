@@ -51,7 +51,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
     adminDeleteDiary,
     operationLoading,
     getAiReview,
-    aiReviewLoading,
     aiReviewResult,
     aiReviewError
   } = useDiaryStore();
@@ -62,6 +61,7 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [aiReviewLoadingMap, setAiReviewLoadingMap] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
     fetchPendingDiaries();
@@ -130,11 +130,12 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
   
   const handleAiReview = async (diary: Diary) => {
     try {
+      setAiReviewLoadingMap(prev => ({ ...prev, [diary.id]: true }));
+      
       const result = await getAiReview(diary.id);
       setCurrentDiary(diary);
       setViewDrawerVisible(true);
       
-      // 如果用户点击"应用AI建议"，自动填写审核结果
       if (result.approved) {
         await approveDiary(diary.id);
         message.success('已应用AI建议：通过审核');
@@ -145,6 +146,8 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
     } catch (error) {
       console.error('AI审核失败:', error);
       message.error('AI审核失败，请稍后重试');
+    } finally {
+      setAiReviewLoadingMap(prev => ({ ...prev, [diary.id]: false }));
     }
   };
   
@@ -165,7 +168,7 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
         size="small"
         icon={<RobotOutlined />}
         onClick={() => handleAiReview(record)}
-        loading={aiReviewLoading}
+        loading={aiReviewLoadingMap[record.id] || false}
       >
         AI审核
       </Button>,
@@ -191,7 +194,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
       </Button>
     ];
     
-    // 只有管理员可以删除游记
     if (isAdmin) {
       buttons.push(
         <Button 
@@ -291,7 +293,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
         />
       </Card>
       
-      {/* 查看游记抽屉 */}
       <Drawer
         title={currentDiary?.title}
         placement="right"
@@ -301,7 +302,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
       >
         {currentDiary && (
           <>
-            {/* 作者信息 */}
             <div style={{ marginBottom: 24 }}>
               <Space align="center">
                 <Avatar 
@@ -315,7 +315,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
               </Space>
             </div>
             
-            {/* AI审核结果 */}
             {aiReviewResult && (
               <Alert
                 message={
@@ -355,13 +354,11 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
               />
             )}
             
-            {/* 游记内容 */}
             <div className="diary-content">
               <Title level={4}>游记内容</Title>
               <div dangerouslySetInnerHTML={{ __html: currentDiary.content }} />
             </div>
             
-            {/* 图片展示 */}
             {currentDiary.images && currentDiary.images.length > 0 && (
               <div className="diary-images">
                 <Title level={4}>图片</Title>
@@ -381,7 +378,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
               </div>
             )}
             
-            {/* 视频展示 */}
             {currentDiary.videoUrl && (
               <div className="diary-video">
                 <Title level={4}>视频</Title>
@@ -396,7 +392,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
         )}
       </Drawer>
       
-      {/* 拒绝游记模态框 */}
       <Modal
         title="拒绝游记"
         open={rejectModalVisible}
@@ -429,7 +424,6 @@ const PendingDiaries: React.FC<PendingDiariesProps> = ({ isAdmin }) => {
         </Form>
       </Modal>
       
-      {/* 删除游记模态框 */}
       {isAdmin && (
         <Modal
           title="删除游记"
