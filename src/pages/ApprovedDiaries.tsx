@@ -13,7 +13,6 @@ import {
   Modal,
   Empty,
   Spin,
-  Drawer,
   message
 } from 'antd';
 import {
@@ -28,6 +27,7 @@ import {
 import { useDiaryStore } from '../store/diaryStore';
 import { Diary } from '../types';
 import { formatDate, getRelativeTime, truncateText, htmlToText } from '../utils';
+import DiaryDetail from '../components/DiaryDetail';
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -49,7 +49,7 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
   
   const [keyword, setKeyword] = useState('');
   const [currentDiary, setCurrentDiary] = useState<Diary | null>(null);
-  const [viewDrawerVisible, setViewDrawerVisible] = useState(false);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
@@ -90,7 +90,7 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
   
   const handleViewDiary = (diary: Diary) => {
     setCurrentDiary(diary);
-    setViewDrawerVisible(true);
+    setViewModalVisible(true);
   };
   
   const showDeleteModal = (diary: Diary) => {
@@ -145,12 +145,11 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
     return (
       <Card
         hoverable
-        style={{ marginBottom: 16 }}
         cover={
           diary.images && diary.images.length > 0 ? (
             <div 
               style={{ 
-                height: 200, 
+                height: 260, 
                 overflow: 'hidden',
                 position: 'relative'
               }}
@@ -203,7 +202,7 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
           ) : (
             <div 
               style={{ 
-                height: 200, 
+                height: 260, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
@@ -216,7 +215,7 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
         }
         actions={cardActions}
       >
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ height: 90, overflow: 'auto' }}>
           <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
             {truncateText(diary.title, 30)}
           </Title>
@@ -250,7 +249,7 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
   
   return (
     <div>
-      <div className="content-header">
+      <div className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={3}>已审核通过游记</Title>
         
         <Space>
@@ -291,9 +290,9 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
             </Card>
           ) : (
             <>
-              <div className="card-grid">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", justifyContent: "flex-start" }}>
                 {publicDiaries.map((diary) => (
-                  <div key={diary.id}>
+                  <div key={diary.id} style={{ width: "calc(25% - 12px)", minWidth: "280px", maxWidth: "300px", marginBottom: "16px" }}>
                     {renderDiaryCard(diary)}
                   </div>
                 ))}
@@ -315,114 +314,30 @@ const ApprovedDiaries: React.FC<ApprovedDiariesProps> = ({ isAdmin }) => {
         </>
       )}
       
-      {/* 查看游记抽屉 */}
-      <Drawer
-        title="游记详情"
-        width={720}
-        open={viewDrawerVisible}
-        onClose={() => setViewDrawerVisible(false)}
-        extra={
-          isAdmin ? (
-            <Button 
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => {
-                setViewDrawerVisible(false);
-                if (currentDiary) {
-                  showDeleteModal(currentDiary);
-                }
-              }}
-              loading={operationLoading}
-            >
-              删除
-            </Button>
-          ) : null
-        }
+      {/* 查看游记详情模态框 */}
+      <Modal
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={null}
+        width={900}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '24px', maxHeight: 'calc(100vh - 140px)', overflow: 'auto' }}
       >
         {currentDiary ? (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <Title level={4}>{currentDiary.title}</Title>
-              <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
-                <Avatar 
-                  icon={<UserOutlined />} 
-                  src={currentDiary.author.avatarUrl} 
-                  style={{ marginRight: 8 }}
-                />
-                <span style={{ marginRight: 16 }}>
-                  {currentDiary.author.nickname || currentDiary.author.username}
-                </span>
-                <span>
-                  {formatDate(currentDiary.createdAt, 'YYYY-MM-DD HH:mm:ss')}
-                </span>
-              </div>
-            </div>
-            
-            {currentDiary.images && currentDiary.images.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>游记图片：</Text>
-                <div className="image-preview">
-                  {currentDiary.images.map((img, index) => (
-                    <div 
-                      key={index} 
-                      className="image-preview-item"
-                      onClick={() => setPreviewImage(img)}
-                    >
-                      <img src={img} alt={`游记图片 ${index + 1}`} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {currentDiary.videoUrl && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>视频：</Text>
-                <div style={{ marginTop: 8 }}>
-                  <video 
-                    controls 
-                    src={currentDiary.videoUrl} 
-                    style={{ width: '100%', maxHeight: 300 }}
-                  />
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <Text strong>游记内容：</Text>
-              <div 
-                className="diary-content"
-                dangerouslySetInnerHTML={{ __html: currentDiary.content }}
-                style={{ 
-                  marginTop: 8, 
-                  padding: 16, 
-                  border: '1px solid #f0f0f0', 
-                  borderRadius: 4,
-                  maxHeight: '400px',
-                  overflow: 'auto'
-                }}
-              />
-            </div>
-          </div>
+          <DiaryDetail
+            diary={currentDiary}
+            isAdmin={isAdmin}
+            onDelete={() => {
+              setViewModalVisible(false);
+              showDeleteModal(currentDiary);
+            }}
+            onClose={() => setViewModalVisible(false)}
+            operationLoading={operationLoading}
+          />
         ) : (
           <Spin />
         )}
-      </Drawer>
-      
-      {/* 图片预览 */}
-      <div style={{ display: 'none' }}>
-        <Image
-          preview={{
-            visible: !!previewImage,
-            src: previewImage || '',
-            onVisibleChange: (visible) => {
-              if (!visible) {
-                setPreviewImage(null);
-              }
-            },
-          }}
-        />
-      </div>
+      </Modal>
       
       {/* 删除游记模态框 */}
       {isAdmin && (
