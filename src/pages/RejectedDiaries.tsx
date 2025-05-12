@@ -13,10 +13,9 @@ import {
   Modal,
   Empty,
   Spin,
-  Drawer,
-  message,
   Tag,
-  Tooltip
+  Tooltip,
+  message
 } from 'antd';
 import {
   UserOutlined,
@@ -31,6 +30,7 @@ import {
 import { useDiaryStore } from '../store/diaryStore';
 import { Diary } from '../types';
 import { formatDate, getRelativeTime, truncateText, htmlToText } from '../utils';
+import DiaryDetail from '../components/DiaryDetail';
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -52,9 +52,8 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
   
   const [keyword, setKeyword] = useState('');
   const [currentDiary, setCurrentDiary] = useState<Diary | null>(null);
-  const [viewDrawerVisible, setViewDrawerVisible] = useState(false);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   useEffect(() => {
     console.log('RejectedDiaries组件初始化，开始获取游记');
@@ -89,7 +88,7 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
   
   const handleViewDiary = (diary: Diary) => {
     setCurrentDiary(diary);
-    setViewDrawerVisible(true);
+    setViewModalVisible(true);
   };
   
   const showDeleteModal = (diary: Diary) => {
@@ -108,6 +107,7 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
       await adminDeleteDiary(currentDiary.id);
       setDeleteModalVisible(false);
       message.success('游记已删除');
+      setViewModalVisible(false);
     } catch (error) {
       console.error('删除失败:', error);
     }
@@ -144,12 +144,11 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
     return (
       <Card
         hoverable
-        style={{ marginBottom: 16 }}
         cover={
           diary.images && diary.images.length > 0 ? (
             <div 
               style={{ 
-                height: 200, 
+                height: 260, 
                 overflow: 'hidden',
                 position: 'relative'
               }}
@@ -202,7 +201,7 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
           ) : (
             <div 
               style={{ 
-                height: 200, 
+                height: 260, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
@@ -215,7 +214,7 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
         }
         actions={cardActions}
       >
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ height: 90, overflow: 'auto' }}>
           <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
             {truncateText(diary.title, 30)}
           </Title>
@@ -268,162 +267,86 @@ const RejectedDiaries: React.FC<RejectedDiariesProps> = ({ isAdmin }) => {
   
   return (
     <div>
-      <div className="content-header">
+      <div className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={3}>已拒绝游记</Title>
-        <div className="content-header-actions">
-          <Space>
-            <Search
-              placeholder="搜索游记标题"
-              allowClear
-              enterButton
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onSearch={handleSearch}
-              style={{ width: 250 }}
-            />
-          </Space>
+        <Space>
+          <Search
+            placeholder="搜索游记标题"
+            allowClear
+            enterButton={<SearchOutlined />}
+            size="middle"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onSearch={handleSearch}
+            style={{ width: 300 }}
+          />
+        </Space>
+      </div>
+      
+      {rejectedDiariesError && (
+        <div style={{ marginBottom: 16 }}>
+          <Text type="danger">{rejectedDiariesError}</Text>
         </div>
-      </div>
+      )}
       
-      <div style={{ marginTop: 16 }}>
-        {rejectedDiariesLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <Spin size="large" />
-          </div>
-        ) : rejectedDiariesError ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <Text type="danger">{rejectedDiariesError}</Text>
-            <div style={{ marginTop: 16 }}>
-              <Button type="primary" onClick={() => fetchRejectedDiaries()}>
-                重试
-              </Button>
-            </div>
-          </div>
-        ) : rejectedDiaries.length === 0 ? (
-          <Empty description="暂无拒绝的游记" style={{ padding: '40px 0' }} />
-        ) : (
-          <>
-            <Row gutter={[16, 16]}>
-              {rejectedDiaries.map((diary) => (
-                <Col xs={24} sm={12} md={8} lg={8} xl={6} key={diary.id}>
-                  {renderDiaryCard(diary)}
-                </Col>
-              ))}
-            </Row>
-            
-            <div style={{ textAlign: 'center', marginTop: 24, marginBottom: 16 }}>
-              <Pagination 
-                current={rejectedDiariesPagination.page} 
-                pageSize={rejectedDiariesPagination.limit}
-                total={rejectedDiariesPagination.total}
-                onChange={handlePaginationChange}
-                showSizeChanger
-                showQuickJumper
-                pageSizeOptions={['10', '20', '50']}
-              />
-            </div>
-          </>
-        )}
-      </div>
+      {rejectedDiariesLoading ? (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <Spin size="large" />
+        </div>
+      ) : (
+        <>
+          {rejectedDiaries.length === 0 ? (
+            <Card>
+              <Empty description="暂无已拒绝的游记" />
+            </Card>
+          ) : (
+            <>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", justifyContent: "flex-start" }}>
+                {rejectedDiaries.map((diary) => (
+                  <div key={diary.id} style={{ width: "calc(25% - 12px)", minWidth: "280px", maxWidth: "300px", marginBottom: "16px" }}>
+                    {renderDiaryCard(diary)}
+                  </div>
+                ))}
+              </div>
+              
+              <div style={{ textAlign: 'center', marginTop: 24 }}>
+                <Pagination
+                  current={rejectedDiariesPagination.page}
+                  pageSize={rejectedDiariesPagination.limit}
+                  total={rejectedDiariesPagination.total}
+                  onChange={handlePaginationChange}
+                  showSizeChanger
+                  showQuickJumper
+                  showTotal={(total) => `共 ${total} 条记录`}
+                />
+              </div>
+            </>
+          )}
+        </>
+      )}
       
-      {/* 查看游记详情抽屉 */}
-      <Drawer
-        title={currentDiary?.title || '游记详情'}
-        placement="right"
-        width={720}
-        onClose={() => setViewDrawerVisible(false)}
-        open={viewDrawerVisible}
+      {/* 游记详情模态框 */}
+      <Modal
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={null}
+        width={900}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '24px', maxHeight: 'calc(100vh - 140px)', overflow: 'auto' }}
       >
         {currentDiary && (
-          <div>
-            <div className="diary-detail-header">
-              <div className="diary-detail-author">
-                <Avatar 
-                  icon={<UserOutlined />} 
-                  src={currentDiary.author.avatarUrl} 
-                  size="small" 
-                  style={{ marginRight: 8 }}
-                />
-                <Text>{currentDiary.author.nickname || currentDiary.author.username}</Text>
-              </div>
-              <div className="diary-detail-meta">
-                <Text type="secondary">发布于 {formatDate(currentDiary.createdAt)}</Text>
-              </div>
-            </div>
-            
-            {currentDiary.rejectReason && (
-              <div style={{ marginTop: 16, marginBottom: 16 }}>
-                <Card 
-                  title={<span style={{ color: '#f5222d' }}><CloseCircleOutlined /> 拒绝原因</span>}
-                  style={{ borderColor: '#ffccc7' }}
-                >
-                  <Text>{currentDiary.rejectReason}</Text>
-                </Card>
-              </div>
-            )}
-            
-            <div className="diary-detail-content" style={{ marginTop: 16 }}>
-              <div className="diary-detail-html-content" 
-                dangerouslySetInnerHTML={{ __html: currentDiary.content }}
-              />
-            </div>
-            
-            {currentDiary.images && currentDiary.images.length > 0 && (
-              <div className="diary-detail-images" style={{ marginTop: 24 }}>
-                <Title level={5}>图片</Title>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {currentDiary.images.map((image, index) => (
-                    <div key={index} style={{ width: '150px', position: 'relative' }}>
-                      <img
-                        src={image}
-                        alt={`游记图片 ${index + 1}`}
-                        style={{ 
-                          width: '100%', 
-                          height: '150px', 
-                          objectFit: 'cover',
-                          cursor: 'pointer',
-                          borderRadius: '4px'
-                        }}
-                        onClick={() => setPreviewImage(image)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {currentDiary.videoUrl && (
-              <div className="diary-detail-video" style={{ marginTop: 24 }}>
-                <Title level={5}>视频</Title>
-                <div>
-                  <video 
-                    controls 
-                    style={{ width: '100%', maxHeight: '400px' }}
-                    src={currentDiary.videoUrl}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <DiaryDetail
+            diary={currentDiary}
+            isAdmin={isAdmin}
+            onDelete={() => {
+              setViewModalVisible(false);
+              showDeleteModal(currentDiary);
+            }}
+            onClose={() => setViewModalVisible(false)}
+            operationLoading={operationLoading}
+          />
         )}
-      </Drawer>
-      
-      {/* 图片预览 */}
-      <div style={{ display: 'none' }}>
-        <Image.PreviewGroup
-          preview={{
-            visible: !!previewImage,
-            onVisibleChange: (visible) => {
-              if (!visible) setPreviewImage(null);
-            },
-            current: currentDiary?.images?.findIndex(img => img === previewImage) || 0,
-          }}
-        >
-          {currentDiary?.images?.map((image, index) => (
-            <Image key={index} src={image} />
-          ))}
-        </Image.PreviewGroup>
-      </div>
+      </Modal>
       
       {/* 删除确认对话框 */}
       <Modal
